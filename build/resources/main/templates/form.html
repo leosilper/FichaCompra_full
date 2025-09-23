@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Novo Pedido - FichaCompra</title>
   <link rel="stylesheet" href="/css/styles.css">
+
   <script>
     async function onCustomerChange(sel) {
       if(!sel.value) return;
@@ -13,113 +14,212 @@
       if (c && c.defaultSatellite)   document.getElementById('satellite').value   = c.defaultSatellite;
       if (c && c.defaultConvenience) document.getElementById('convenience').value = c.defaultConvenience;
     }
+
     async function onCollectionChange(sel, idx) {
       const code = sel.value;
       if (!code) return;
       const res = await fetch('/subcollections?parentCode=' + encodeURIComponent(code));
       const list = await res.json();
-      const sub = document.getElementById('items['+idx+'].subcollection');
+      const sub = document.getElementById(`items[${idx}].subcollection`);
       sub.innerHTML = '<option value="">Selecione...</option>';
       list.forEach(it => {
         const o = document.createElement('option');
         o.value = it.code; o.text = it.label;
         sub.appendChild(o);
       });
+      refreshDescription(idx);
     }
+
     function addItemRow() {
       const idx = document.querySelectorAll('.item-row').length;
       const tpl = document.getElementById('item-template').innerHTML.replace(/__IDX__/g, idx);
       document.getElementById('items').insertAdjacentHTML('beforeend', tpl);
     }
+
+    function removeItemRow(btn) {
+      const row = btn.closest('.item-row');
+      if (row) row.remove();
+    }
+
+    function refreshDescription(idx) {
+      const g = v => (document.querySelector(`[name="items[${idx}].${v}"]`) || {}).value || '';
+      const tipo = 'TÊNIS';
+      const base = `${tipo} ${g('brand')} ${g('modelName')} ${g('color')}`.trim().replace(/\s+/g,' ').toUpperCase();
+      const gender = (g('gender')||'').toUpperCase();
+      const coll = (g('collection')||'').replace(/_/g,' ').toUpperCase();
+      let desc = base;
+      if (gender && gender !== 'UNISSEX') desc += ` - ${gender}`;
+      if (coll && coll !== 'PERMANENTE') desc += ` (${coll})`;
+      const vis = document.getElementById(`desc_vis_${idx}`);
+      const hid = document.getElementById(`desc_hid_${idx}`);
+      if (vis) vis.value = desc;
+      if (hid) hid.value = desc;
+    }
   </script>
 </head>
 <body>
-  <h1>Novo Pedido</h1>
+  <div class="container">
+    <h1>Novo Pedido</h1>
 
-  <form method="post" th:object="${pr}">
-    <div class="row">
-      <label>Número:</label>
-      <input type="text" th:field="*{requestNumber}" readonly>
-    </div>
+    <form method="post" th:object="${pr}" class="panel">
 
-    <div class="row">
-      <label>Cliente:</label>
-      <select th:field="*{customer}" onchange="onCustomerChange(this)">
-        <option value="">Selecione...</option>
-        <option th:each="c: ${customers}" th:value="${c.id}" th:text="${c.name}"></option>
-      </select>
-    </div>
+      <!-- Cabeçalho do pedido -->
+      <div class="form-grid">
+        <div class="form-control">
+          <label for="requestNumber">Número</label>
+          <input id="requestNumber" type="text" th:field="*{requestNumber}" readonly>
+        </div>
 
-    <div class="row">
-      <label>Destino</label>
-      <select id="destination" th:field="*{destination}">
-        <option value="">Selecione...</option>
-        <option th:each="d: ${destinos}" th:value="${d.code}" th:text="${d.label}"></option>
-      </select>
+        <div class="form-control">
+          <label for="customer">Cliente <span class="req">*</span></label>
+          <select id="customer" th:field="*{customer}" onchange="onCustomerChange(this)" required>
+            <option value="">Selecione...</option>
+            <option th:each="c: ${customers}" th:value="${c.id}" th:text="${c.name}"></option>
+          </select>
+        </div>
 
-      <label>Satélite</label>
-      <select id="satellite" th:field="*{satellite}">
-        <option value="">Selecione...</option>
-        <option th:each="s: ${satelites}" th:value="${s.code}" th:text="${s.label}"></option>
-      </select>
+        <div class="form-control">
+          <label for="destination">Destino</label>
+          <select id="destination" th:field="*{destination}">
+            <option value="">Selecione...</option>
+            <option th:each="d: ${destinos}" th:value="${d.code}" th:text="${d.label}"></option>
+          </select>
+          <small th:if="${#lists.isEmpty(destinos)}" class="help-warn">Sem opções: carregue os seeds (Flyway V2__seed.sql).</small>
+        </div>
 
-      <label>Conveniência</label>
-      <select id="convenience" th:field="*{convenience}">
-        <option value="">Selecione...</option>
-        <option th:each="c: ${conveniencias}" th:value="${c.code}" th:text="${c.label}"></option>
-      </select>
-    </div>
+        <div class="form-control">
+          <label for="satellite">Satélite</label>
+          <select id="satellite" th:field="*{satellite}">
+            <option value="">Selecione...</option>
+            <option th:each="s: ${satelites}" th:value="${s.code}" th:text="${s.label}"></option>
+          </select>
+        </div>
 
-    <h3>Itens</h3>
-    <div id="items"></div>
-    <button class="btn" type="button" onclick="addItemRow()">+ Adicionar item</button>
+        <div class="form-control">
+          <label for="convenience">Conveniência</label>
+          <select id="convenience" th:field="*{convenience}">
+            <option value="">Selecione...</option>
+            <option th:each="c: ${conveniencias}" th:value="${c.code}" th:text="${c.label}"></option>
+          </select>
+        </div>
+      </div>
 
-    <div class="actions">
-      <button class="btn primary" type="submit">Salvar</button>
-      <a class="btn" href="/">Cancelar</a>
-    </div>
-  </form>
+      <h2>Itens</h2>
 
-  <!-- Template de linha -->
+      <div id="items"></div>
+
+      <div class="actions">
+        <button class="btn" type="button" onclick="addItemRow()">+ Adicionar item</button>
+      </div>
+
+      <hr class="hr">
+
+      <div class="actions">
+        <button class="btn primary" type="submit">Salvar</button>
+        <a class="btn" href="/">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Template de Item em GRID -->
   <script type="text/template" id="item-template">
     <div class="item-row">
       <fieldset>
         <legend>Item __IDX__</legend>
 
-        <label>Marca</label><input name="items[__IDX__].brand" required>
-        <label>Modelo</label><input name="items[__IDX__].modelName" required>
-        <label>Cor</label><input name="items[__IDX__].color" required>
+        <div class="grid-2">
+          <div class="form-control">
+            <label for="brand___IDX__">Marca <span class="req">*</span></label>
+            <input id="brand___IDX__" name="items[__IDX__].brand" required oninput="refreshDescription(__IDX__)">
+          </div>
 
-        <label>Gênero</label>
-        <select name="items[__IDX__].gender" required>
-          <option value="">Selecione...</option>
-          <option th:each="g: ${generos}" th:value="${g.code}" th:text="${g.label}"></option>
-        </select>
+          <div class="form-control">
+            <label for="model___IDX__">Modelo <span class="req">*</span></label>
+            <input id="model___IDX__" name="items[__IDX__].modelName" required oninput="refreshDescription(__IDX__)">
+          </div>
+        </div>
 
-        <label>Ciclo de vida</label>
-        <select name="items[__IDX__].lifecycle" required>
-          <option value="">Selecione...</option>
-          <option th:each="c: ${ciclos}" th:value="${c.code}" th:text="${c.label}"></option>
-        </select>
+        <div class="grid-2">
+          <div class="form-control">
+            <label for="color___IDX__">Cor <span class="req">*</span></label>
+            <input id="color___IDX__" name="items[__IDX__].color" required oninput="refreshDescription(__IDX__)">
+          </div>
 
-        <label>Coleção</label>
-        <select name="items[__IDX__].collection" required onchange="onCollectionChange(this, __IDX__)">
-          <option value="">Selecione...</option>
-          <option th:each="c: ${colecoes}" th:value="${c.code}" th:text="${c.label}"></option>
-        </select>
+          <div class="form-control">
+            <label for="gender___IDX__">Gênero <span class="req">*</span></label>
+            <select id="gender___IDX__" name="items[__IDX__].gender" required onchange="refreshDescription(__IDX__)">
+              <option value="">Selecione...</option>
+              <option th:each="g: ${generos}" th:value="${g.code}" th:text="${g.label}"></option>
+            </select>
+            <small th:if="${#lists.isEmpty(generos)}" class="help-warn">Sem opções: seeds ausentes.</small>
+          </div>
+        </div>
 
-        <label>Subcoleção</label>
-        <select id="items[__IDX__].subcollection" name="items[__IDX__].subcollection">
-          <option value="">Selecione...</option>
-        </select>
+        <div class="grid-2">
+          <div class="form-control">
+            <label for="lifecycle___IDX__">Ciclo de vida <span class="req">*</span></label>
+            <select id="lifecycle___IDX__" name="items[__IDX__].lifecycle" required>
+              <option value="">Selecione...</option>
+              <option th:each="c: ${ciclos}" th:value="${c.code}" th:text="${c.label}"></option>
+            </select>
+          </div>
 
-        <label>SKU Fornecedor</label><input name="items[__IDX__].skuVendor">
-        <label>EAN</label><input name="items[__IDX__].ean">
-        <label>Grade</label><input name="items[__IDX__].sizeScale">
-        <label>Custo</label><input type="number" step="0.01" name="items[__IDX__].priceCost">
-        <label>Preço</label><input type="number" step="0.01" name="items[__IDX__].priceList">
+          <div class="form-control">
+            <label for="collection___IDX__">Coleção <span class="req">*</span></label>
+            <select id="collection___IDX__" name="items[__IDX__].collection" required onchange="onCollectionChange(this,__IDX__); refreshDescription(__IDX__)">
+              <option value="">Selecione...</option>
+              <option th:each="c: ${colecoes}" th:value="${c.code}" th:text="${c.label}"></option>
+            </select>
+          </div>
+        </div>
 
-        <input type="hidden" name="items[__IDX__].standardDescription" value="">
+        <div class="grid-2">
+          <div class="form-control">
+            <label for="subcollection___IDX__">Subcoleção</label>
+            <select id="items[__IDX__].subcollection" name="items[__IDX__].subcollection">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+
+          <div class="form-control">
+            <label for="sku___IDX__">SKU Fornecedor</label>
+            <input id="sku___IDX__" name="items[__IDX__].skuVendor">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-control">
+            <label for="ean___IDX__">EAN</label>
+            <input id="ean___IDX__" name="items[__IDX__].ean">
+          </div>
+
+          <div class="form-control">
+            <label for="grade___IDX__">Grade</label>
+            <input id="grade___IDX__" name="items[__IDX__].sizeScale">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="form-control">
+            <label for="cost___IDX__">Custo</label>
+            <input id="cost___IDX__" type="number" step="0.01" name="items[__IDX__].priceCost">
+          </div>
+
+          <div class="form-control">
+            <label for="price___IDX__">Preço</label>
+            <input id="price___IDX__" type="number" step="0.01" name="items[__IDX__].priceList">
+          </div>
+        </div>
+
+        <div class="form-control">
+          <label for="desc_vis___IDX__">Descrição (auto)</label>
+          <input id="desc_vis___IDX__" type="text" readonly class="muted">
+          <input id="desc_hid___IDX__" type="hidden" name="items[__IDX__].standardDescription">
+        </div>
+
+        <div class="actions">
+          <button class="btn danger" type="button" onclick="removeItemRow(this)">Remover item</button>
+        </div>
       </fieldset>
     </div>
   </script>
