@@ -1,0 +1,11 @@
+body{font-family:system-ui,Arial,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem}
+h1{margin-top:0}
+table{width:100%;border-collapse:collapse;margin-top:1rem}
+th,td{border:1px solid #ddd;padding:.5rem;text-align:left}
+fieldset{border:1px solid #ccc;margin:.5rem 0;padding:.75rem;border-radius:6px}
+label{display:inline-block;min-width:120px;margin-right:.5rem}
+input,select{margin:.25rem .5rem .25rem 0;padding:.35rem}
+.row{margin:.5rem 0}
+.actions{margin-top:1rem}
+.btn{display:inline-block;padding:.5rem .75rem;border:1px solid #999;border-radius:6px;text-decoration:none}
+.btn.primary{background:#222;color:#fff;border-color:#222}

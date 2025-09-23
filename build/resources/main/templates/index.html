@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>FichaCompra</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <h1>FichaCompra</h1>
+  <a class="btn" href="/new">Novo Pedido</a>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Cliente</th>
+        <th>Destino</th>
+        <th>Status</th>
+        <th>Itens</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="r: ${requests}">
+        <td th:text="${r.requestNumber}">FC-1</td>
+        <td th:text="${r.customer != null ? r.customer.name : '-'}">Cliente</td>
+        <td th:text="${r.destination}">Destino</td>
+        <td th:text="${r.status}">DRAFT</td>
+        <td th:text="${#lists.size(r.items)}">0</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>
